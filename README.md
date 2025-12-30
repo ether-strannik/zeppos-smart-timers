@@ -1,28 +1,12 @@
 # ZeppOS Smart Timers
 
-Advanced timer and alarm application for ZeppOS smartwatches with custom vibrations, 
-sound alerts, and intuitive time input.
+Advanced timer and alarm application for ZeppOS smartwatches with custom vibrations, sound alerts, and intuitive time input.
 
-## Credits & Development History
+## Credits
 
-**Originally forked from:** [albertincx/zeppos-my-timers](https://github.com/albertincx/zeppos-my-timers)
+**Built on the foundation of:** [albertincx/zeppos-my-timers](https://github.com/albertincx/zeppos-my-timers)
 
-This project started as a fork of albertincx's timer app, but has undergone 
-extensive development and transformation:
-
-**Major changes from original:**
-- Complete alarm system with scheduling, snooze, and sound
-- Upgraded from ZeppOS API 3.0 to API 4.2
-- Custom vibration and sound configuration per alarm/timer
-- Native keyboard integration replacing custom implementation
-- Redesigned UI with icon-based controls
-- Screen wake management and lifecycle handling
-- Per-alarm/timer settings architecture
-
-After these extensive modifications, this has become a substantially different 
-application while retaining the original "timer app" concept as its foundation.
-
-Thank you to albertincx for creating the original project that made this possible!
+Timer and alarm app for ZeppOS, substantially expanded from the original timer concept by albertincx.
 
 ## License
 
