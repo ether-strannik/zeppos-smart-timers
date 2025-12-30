@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:docs.zepp.com)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git reset:*)",
+      "Bash(git push)",
+      "Bash(curl:*)",
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run:*)",
+      "Bash(zeus build:*)"
+    ]
+  }
+}
