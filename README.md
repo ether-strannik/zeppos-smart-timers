@@ -4,9 +4,9 @@ Advanced timer and alarm application for ZeppOS smartwatches with custom vibrati
 
 ## Credits
 
-**Built on the foundation of:** [albertincx/zeppos-my-timers](https://github.com/albertincx/zeppos-my-timers)
+**Built on:** [albertincx/zeppos-my-timers](https://github.com/albertincx/zeppos-my-timers)
 
-Timer and alarm app for ZeppOS, substantially expanded from the original timer concept by albertincx.
+Substantially expanded timer/alarm app (~80% new code) with alarms, popups, vibration control, and native keyboard support. Original timer concept by albertincx.
 
 ## License
 
