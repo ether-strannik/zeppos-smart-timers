@@ -1,7 +1,7 @@
 {
   "configVersion": "v3",
   "app": {
-    "appId": 1056908,
+    "appId": 1100979,
     "appName": "Smart Timers",
     "appType": "app",
     "version": {
@@ -42,7 +42,12 @@
       },
       "platforms": [
         {
-          "st": "r"
+          "st": "r",
+          "dw": 480
+        },
+        {
+          "st": "s",
+          "dw": 390
         }
       ],
       "designWidth": 480
