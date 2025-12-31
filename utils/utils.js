@@ -270,7 +270,6 @@ export function parseAlarmSettings(paramString) {
             enabled: parts[6] === 'E0' ? false : true // Default to true if missing (backward compat)
         };
     } catch (e) {
-        console.log('Error parsing alarm settings:', e);
         // Return defaults on error
         return {
             vibrationEnabled: true,

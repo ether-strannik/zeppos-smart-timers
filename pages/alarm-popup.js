@@ -16,14 +16,11 @@ let vibrator = null;
 
 Page({
     onInit(params) {
-        console.log('Alarm popup page, params:', params);
-
         // Keep screen on during alarm to prevent timeout
         try {
             hmApp.setScreenKeep(true);
-            console.log('Popup: Screen keep enabled');
         } catch (e) {
-            console.log('Popup: Error enabling screen keep:', e);
+            // Error enabling screen keep
         }
 
         // Relaunch app if screen wakes from sleep
@@ -31,9 +28,8 @@ Page({
             setWakeUpRelaunch({
                 relaunch: true
             });
-            console.log('Popup: Wake-up relaunch enabled');
         } catch (e) {
-            console.log('Popup: Error enabling wake-up relaunch:', e);
+            // Error enabling wake-up relaunch
         }
 
         // Start vibration and sound in popup instead of app-service
@@ -48,21 +44,18 @@ Page({
 
             // Check if vibration is enabled for this alarm
             if (!settings.vibrationEnabled) {
-                console.log('Popup: Vibration disabled for this alarm');
                 return;
             }
 
             // Use per-alarm vibration type: C = continuous (VIBRATOR_SCENE_TIMER), N = non-continuous (VIBRATOR_SCENE_NOTIFICATION)
             const vibrationMode = settings.vibrationType === 'N' ? VIBRATOR_SCENE_NOTIFICATION : VIBRATOR_SCENE_TIMER;
-            const vibrationTypeName = settings.vibrationType === 'N' ? 'VIBRATOR_SCENE_NOTIFICATION' : 'VIBRATOR_SCENE_TIMER';
 
             vibrator = new Vibrator();
             vibrator.start();
             vibrator.setMode(vibrationMode);
             vibrator.start();
-            console.log(`Popup: Alarm vibration started (${vibrationTypeName})`);
         } catch (e) {
-            console.log("Popup: Vibrator error:", e);
+            // Vibrator error
         }
     },
     startAlarmSound() {
@@ -73,61 +66,35 @@ Page({
 
             // Check if sound is enabled for this alarm
             if (!settings.soundEnabled) {
-                console.log('Popup: Alarm sound disabled for this alarm');
                 return;
             }
 
-            console.log('Popup: Starting alarm sound');
             alarmPlayer = create(id.PLAYER);
 
             alarmPlayer.addEventListener(alarmPlayer.event.PREPARE, function (result) {
-                console.log('Popup: PREPARE event, result:', result);
                 if (result) {
-                    console.log('Popup: Audio prepared, starting playback');
                     alarmPlayer.start();
-                } else {
-                    console.log('Popup: Audio prepare failed');
                 }
             });
 
-            alarmPlayer.addEventListener(alarmPlayer.event.START, function () {
-                console.log('Popup: START event - playback started');
-            });
-
-            alarmPlayer.addEventListener(alarmPlayer.event.PAUSE, function () {
-                console.log('Popup: PAUSE event');
-            });
-
-            alarmPlayer.addEventListener(alarmPlayer.event.STOP, function () {
-                console.log('Popup: STOP event');
-            });
-
             alarmPlayer.addEventListener(alarmPlayer.event.COMPLETE, function () {
-                console.log('Popup: COMPLETE event - looping audio');
                 try {
                     // Re-prepare and restart for continuous loop
                     alarmPlayer.prepare();
-                    // Note: start() is called automatically after prepare() in PREPARE event
                 } catch (e) {
-                    console.log('Popup: Error restarting loop:', e);
                     // Fallback: try just start() if prepare fails
                     try {
                         alarmPlayer.start();
                     } catch (e2) {
-                        console.log('Popup: Fallback start also failed:', e2);
+                        // Fallback start also failed
                     }
                 }
             });
 
-            alarmPlayer.addEventListener(alarmPlayer.event.ERROR, function (error) {
-                console.log('Popup: ERROR event:', error);
-            });
-
             alarmPlayer.setSource(alarmPlayer.source.FILE, { file: 'test-alarm.mp3' });
-            console.log('Popup: Calling prepare()');
             alarmPlayer.prepare();
         } catch (e) {
-            console.log('Popup: Sound playback error:', e);
+            // Sound playback error
         }
     },
     build() {
@@ -233,16 +200,14 @@ Page({
                     param: `c_${snoozeTime}_00:${snoozeMinutes < 10 ? '0' : ''}${snoozeMinutes}:00|Snooze||${settingsStr}`,
                 };
 
-                const id = alarmMgr.set(option);
-                console.log(`Snooze alarm set for ${snoozeMinutes} min, id: ${id}`);
+                alarmMgr.set(option);
 
                 // Stop vibration
                 if (vibrator) {
                     try {
                         vibrator.stop();
-                        console.log('Popup: Snooze - stopped vibration');
                     } catch (e) {
-                        console.log('Popup: Error stopping vibration:', e);
+                        // Error stopping vibration
                     }
                 }
 
@@ -250,9 +215,8 @@ Page({
                 if (alarmPlayer) {
                     try {
                         alarmPlayer.stop();
-                        console.log('Popup: Snooze - stopped sound');
                     } catch (e) {
-                        console.log('Popup: Error stopping sound:', e);
+                        // Error stopping sound
                     }
                 }
 
@@ -280,9 +244,8 @@ Page({
                 if (vibrator) {
                     try {
                         vibrator.stop();
-                        console.log('Popup: Stop button - stopped vibration');
                     } catch (e) {
-                        console.log('Popup: Error stopping vibration:', e);
+                        // Error stopping vibration
                     }
                 }
 
@@ -290,9 +253,8 @@ Page({
                 if (alarmPlayer) {
                     try {
                         alarmPlayer.stop();
-                        console.log('Popup: Stop button - stopped sound');
                     } catch (e) {
-                        console.log('Popup: Error stopping sound:', e);
+                        // Error stopping sound
                     }
                 }
 
@@ -307,32 +269,27 @@ Page({
         setScrollLock({ lock: true });
     },
     onDestroy() {
-        console.log('Alarm popup destroyed');
-
         // Allow screen to sleep again when alarm is dismissed
         try {
             hmApp.setScreenKeep(false);
-            console.log('Popup: Screen keep disabled');
         } catch (e) {
-            console.log('Popup: Error disabling screen keep:', e);
+            // Error disabling screen keep
         }
 
         // Stop vibration when page is destroyed
         if (vibrator) {
             try {
                 vibrator.stop();
-                console.log('Popup: onDestroy - stopped vibration');
             } catch (e) {
-                console.log('Popup: Error stopping vibration in onDestroy:', e);
+                // Error stopping vibration
             }
         }
         // Stop sound when page is destroyed
         if (alarmPlayer) {
             try {
                 alarmPlayer.stop();
-                console.log('Popup: onDestroy - stopped sound');
             } catch (e) {
-                console.log('Popup: Error stopping sound in onDestroy:', e);
+                // Error stopping sound
             }
         }
     },

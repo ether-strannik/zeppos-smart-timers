@@ -133,7 +133,7 @@ Page({
                 sortByName = savedSort === 'true';
             }
         } catch (e) {
-            console.log("Error loading settings:", e);
+            // Error loading settings
         }
 
         // Build the UI

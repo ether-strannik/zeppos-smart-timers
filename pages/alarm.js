@@ -1,4 +1,3 @@
-import {log} from "@zos/utils";
 import hmUI, { event } from "@zos/ui";
 import {replace} from "@zos/router";
 import * as alarmMgr from "@zos/alarm";
@@ -371,7 +370,6 @@ Page({
                                 if (touchDuration >= 500) {
                                     // Long press: Edit timer
                                     isLongPress = true;
-                                    console.log('Long press detected: editing timer');
 
                                     // Extract settings from storage
                                     const storeVal = globalData.localStorage.getItem(alarmNumOrKey) || '';
@@ -397,7 +395,6 @@ Page({
                                     });
                                 } else {
                                     // Short tap: Start timer (execute original click_func)
-                                    console.log('Tap detected: starting timer');
                                     click_func();
                                 }
                             });
@@ -444,7 +441,7 @@ Page({
                         });
                     }
                 } catch (e) {
-                    console.log(e);
+                    // Error rendering alarm
                 }
             });
 
@@ -578,6 +575,5 @@ Page({
         hmUI.createWidget(hmUI.widget.PAGE_SCROLLBAR, {});
     },
     onDestroy() {
-        log.log("page on destroy invoke");
     },
 });

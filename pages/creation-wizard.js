@@ -32,8 +32,6 @@ let selectTimeVc = null;
 
 Page({
     onInit(param) {
-        console.log('Creation wizard onInit, params:', param);
-
         // Parse params if provided
         if (param) {
             try {
@@ -62,7 +60,7 @@ Page({
                     wizardState.alarmEnabled = config.existingData.enabled !== false; // Default to true
                 }
             } catch (e) {
-                console.log('Error parsing wizard params:', e);
+                // Error parsing params
             }
         }
     },
@@ -275,11 +273,9 @@ Page({
             color: 0x000000,
         });
 
-        console.log('Wizard UI built successfully');
     },
 
     onDestroy() {
-        console.log('Wizard page destroyed');
     }
 });
 
@@ -357,8 +353,6 @@ function updateSoundButton() {
 
 // Proceed to time selection with wizard config
 function proceedToTimeSelection() {
-    console.log('Proceeding to time selection with config:', wizardState);
-
     // Build wizard config
     const wizardConfig = {
         vibrationEnabled: wizardState.vibrationEnabled,

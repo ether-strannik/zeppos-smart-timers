@@ -77,12 +77,7 @@ export function setupAlarm(dTime, mode = false, customName = null, isAlarmRestar
             alarmObj.time = getAlarmTime(dTime);
         }
 
-        console.log(`setupAlarm - mode: ${mode}, isAlarmRestart: ${isAlarmRestart}, timeStr: ${timeStr || 'N/A'}, customName: ${customName}, name: ${name}`);
-        console.log(`setupAlarm - dTime: ${dTime.toString()}`);
-        console.log(`setupAlarm - alarmObj.time (timestamp): ${alarmObj.time}`);
-        console.log(`setupAlarm - alarm Date: ${new Date(alarmObj.time * 1000).toString()}`);
         let paramVal = `${(isAlarm || isRestartAlarm) ? 'a_' : (isTimer ? 't_' : 'c_')}${alarmObj.time}${name ? `_${name}` : ''}`;
-        console.log(`setupAlarm - paramVal: ${paramVal}`);
         alarmObj.param = paramVal;
 
         let STORE_KEY = `${ALARM_KEY}${name}`;
@@ -115,7 +110,6 @@ export function setupAlarm(dTime, mode = false, customName = null, isAlarmRestar
             } else if (!alarmEnabled) {
                 // Alarm disabled: don't activate, just save to storage
                 id = -1;
-                console.log('Creating disabled alarm preset (not activating)');
             } else {
                 // Alarm enabled: activate it
                 id = alarmMgr.set(alarmObj);
@@ -130,11 +124,9 @@ export function setupAlarm(dTime, mode = false, customName = null, isAlarmRestar
 
         if (id === 0) {
             // cant setup
-            console.log('cant setup id, something wrong');
         } else {
             // If editing (storageKey provided), delete the old item first
             if (storageKey) {
-                console.log('Editing mode: deleting old storage key:', storageKey);
                 globalData.localStorage.removeItem(storageKey);
             }
 
@@ -157,7 +149,7 @@ export function setupAlarm(dTime, mode = false, customName = null, isAlarmRestar
             });
         }
     } catch (e) {
-        console.log(e);
+        // Error setting up alarm
     }
 }
 
@@ -263,14 +255,12 @@ function showNameInput(dTime, timer, previousVc, existingData = null) {
         inputType: inputType.CHAR,
         text: initialText,
         onComplete: (keyboardWidget, result) => {
-            console.log("Keyboard confirmed:", result.data);
-
             // Clean up keyboard first
             try {
                 deleteKeyboard();
                 activeKeyboard = null;
             } catch (e) {
-                console.log("Error deleting keyboard:", e);
+                // Error deleting keyboard
             }
 
             if (pendingTimerData) {
@@ -295,14 +285,12 @@ function showNameInput(dTime, timer, previousVc, existingData = null) {
             changedSec = undefined;
         },
         onCancel: () => {
-            console.log("Keyboard cancelled - navigating back without saving");
-
             // Clean up keyboard
             try {
                 deleteKeyboard();
                 activeKeyboard = null;
             } catch (e) {
-                console.log("Error deleting keyboard on cancel:", e);
+                // Error deleting keyboard
             }
 
             // User cancelled - clear pending data without saving
@@ -321,8 +309,6 @@ function showNameInput(dTime, timer, previousVc, existingData = null) {
             });
         }
     });
-
-    console.log("Native keyboard created with initial text:", initialText);
 }
 
 export function selectTime(mode = 'timer', existingData = null, wizardConfig = null, storageKey = null) {
@@ -379,9 +365,6 @@ export function selectTime(mode = 'timer', existingData = null, wizardConfig = n
                 dateTime = new Date();
                 dateTime.setHours(hour, minute, 0, 0);
             }
-
-            console.log(`TimePicker selected: ${hour}h ${minute}m (mode: ${mode})`);
-            console.log(`dateTime after set: ${dateTime.toString()}`);
 
             changedHour = hour > 0;
             changedMin = minute > 0;
