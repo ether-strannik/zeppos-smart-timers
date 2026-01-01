@@ -9,7 +9,7 @@ AppService({
         // Vibration and sound playback handled in alarm-popup page (app-service lifecycle too short)
         // Launch the app with alarm popup page
         launchApp({
-            appId: 1056908,
+            appId: 1100979,
             url: 'pages/alarm-popup',
             params: params || 'alarm_triggered',
         });
