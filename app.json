@@ -5,12 +5,12 @@
     "appName": "Smart Timers",
     "appType": "app",
     "version": {
-      "code": 4,
-      "name": "4.0"
+      "code": 1,
+      "name": "1.0.0"
     },
     "icon": "iconApp.png",
-    "vender": "Albert Safiullin albertincx@gmail.com",
-    "description": "An app creates timers with alarm"
+    "vender": "ether strannik",
+    "description": "Smart Timers - Enhanced timer and alarm app for ZeppOS"
   },
   "permissions": [
     "device:os.notification",
