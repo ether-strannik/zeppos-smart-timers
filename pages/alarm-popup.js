@@ -7,12 +7,15 @@ import * as alarmMgr from "@zos/alarm";
 import { create, id } from "@zos/media";
 import { setWakeUpRelaunch } from '@zos/display';
 import { parseAlarmSettings, buildAlarmSettingsString } from "../utils/utils";
+import { TimePicker } from "../lib/mmk/TimePicker";
 
 const { width: DEVICE_WIDTH, height: DEVICE_HEIGHT } = getDeviceInfo();
 const globalData = getApp()._options.globalData;
 
 let alarmPlayer = null;
 let vibrator = null;
+let timePicker = null;
+let isProcessing = false;
 
 Page({
     onInit(params) {
@@ -174,58 +177,7 @@ Page({
             press_color: 0xD94F04,
             text: 'SNOOZE',
             text_size: 28,
-            click_func: () => {
-                // Get snooze duration from settings
-                const savedSnooze = globalData.localStorage.getItem('snooze_duration');
-                const snoozeDurations = [1, 3, 5, 10, 15, 20, 30];
-                const snoozeIndex = savedSnooze !== null ? parseInt(savedSnooze) : 2;
-                const snoozeMinutes = snoozeDurations[snoozeIndex] || 5;
-
-                // Get original alarm settings to apply to snooze
-                const params = globalData.localStorage.getItem('pending_alarm') || '';
-                const settings = parseAlarmSettings(params);
-                const settingsStr = buildAlarmSettingsString({
-                    vibrationEnabled: settings.vibrationEnabled,
-                    vibrationType: settings.vibrationType,
-                    soundEnabled: settings.soundEnabled
-                });
-
-                // Create snooze alarm (current time + snooze duration)
-                const snoozeTime = Math.floor(Date.now() / 1000) + (snoozeMinutes * 60);
-
-                const option = {
-                    url: 'app-service/index',
-                    time: snoozeTime,
-                    repeat_type: alarmMgr.REPEAT_ONCE,
-                    param: `c_${snoozeTime}_00:${snoozeMinutes < 10 ? '0' : ''}${snoozeMinutes}:00|Snooze||${settingsStr}`,
-                };
-
-                alarmMgr.set(option);
-
-                // Stop vibration
-                if (vibrator) {
-                    try {
-                        vibrator.stop();
-                    } catch (e) {
-                        // Error stopping vibration
-                    }
-                }
-
-                // Stop sound
-                if (alarmPlayer) {
-                    try {
-                        alarmPlayer.stop();
-                    } catch (e) {
-                        // Error stopping sound
-                    }
-                }
-
-                // Go to main page
-                replace({
-                    url: 'pages/alarm',
-                    params: 'skip',
-                });
-            },
+            click_func: () => this.snooze(),
         });
 
         // Stop button (right)
@@ -268,7 +220,105 @@ Page({
 
         setScrollLock({ lock: true });
     },
+    snooze() {
+        if (isProcessing) return;
+
+        // Stop alerts while picking duration
+        if (vibrator) {
+            try { vibrator.stop(); } catch (e) {}
+        }
+        if (alarmPlayer) {
+            try { alarmPlayer.stop(); } catch (e) {}
+        }
+
+        // Get default snooze duration from settings
+        const savedSnooze = globalData.localStorage.getItem('snooze_duration');
+        const snoozeDurations = [1, 3, 5, 10, 15, 20, 30];
+        const snoozeIndex = savedSnooze !== null ? parseInt(savedSnooze) : 2;
+        const defaultMinutes = snoozeDurations[snoozeIndex] || 5;
+        const defaultHour = Math.floor(defaultMinutes / 60);
+        const defaultMin = defaultMinutes % 60;
+
+        // Store selected duration
+        this.snoozeHour = defaultHour;
+        this.snoozeMinute = defaultMin;
+
+        // Show TimePicker overlay
+        timePicker = new TimePicker({
+            initialHour: defaultHour,
+            initialMinute: defaultMin,
+            onSelect: (hour, minute) => {
+                this.snoozeHour = hour;
+                this.snoozeMinute = minute;
+            },
+            onConfirm: () => {
+                this.createSnoozeAlarm();
+            }
+        });
+
+        timePicker.render();
+    },
+    createSnoozeAlarm() {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        const totalMinutes = (this.snoozeHour * 60) + this.snoozeMinute;
+
+        if (totalMinutes === 0) {
+            hmUI.showToast({ text: 'Select a duration' });
+            isProcessing = false;
+            return;
+        }
+
+        // Get original alarm settings
+        const params = globalData.localStorage.getItem('pending_alarm') || '';
+        const settings = parseAlarmSettings(params);
+        const settingsStr = buildAlarmSettingsString({
+            vibrationEnabled: settings.vibrationEnabled,
+            vibrationType: settings.vibrationType,
+            soundEnabled: settings.soundEnabled
+        });
+
+        // Create snooze alarm
+        const snoozeTime = Math.floor(Date.now() / 1000) + (totalMinutes * 60);
+
+        const option = {
+            url: 'app-service/index',
+            time: snoozeTime,
+            repeat_type: alarmMgr.REPEAT_ONCE,
+            param: `c_${snoozeTime}_00:${totalMinutes < 10 ? '0' : ''}${totalMinutes}:00|Snooze||${settingsStr}`,
+        };
+
+        alarmMgr.set(option);
+
+        // Show confirmation toast
+        const hoursText = this.snoozeHour > 0 ? `${this.snoozeHour}h ` : '';
+        const minutesText = this.snoozeMinute > 0 ? `${this.snoozeMinute}m` : '';
+        hmUI.showToast({ text: `Snoozed ${hoursText}${minutesText}` });
+
+        // Cleanup and exit
+        if (timePicker) {
+            timePicker.destroy();
+            timePicker = null;
+        }
+
+        replace({
+            url: 'pages/alarm',
+            params: 'skip',
+        });
+    },
     onDestroy() {
+        // Reset processing guard for next use
+        isProcessing = false;
+
+        // Clean up TimePicker if shown
+        if (timePicker) {
+            try {
+                timePicker.destroy();
+                timePicker = null;
+            } catch (e) {}
+        }
+
         // Allow screen to sleep again when alarm is dismissed
         try {
             hmApp.setScreenKeep(false);
