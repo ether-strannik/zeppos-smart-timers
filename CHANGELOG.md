@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Adjustable snooze time** with TimePicker - user can modify snooze duration before confirming
+- **Snooze preserves original name** - snoozed alarm shows original timer/alarm name instead of generic "Snooze"
+- **AIO orchestrator integration** for voice-controlled timer and alarm creation
+- **createTimer action** via voice commands (e.g., "set timer for 5 minutes", "set coffee timer for 10 minutes")
+- **createAlarm action** via voice commands (e.g., "set alarm for 7am", "wake me up at 6:30")
+- **startTimer action** via voice commands (e.g., "start coffee timer")
+
 ## [1.0.0] - 2025-12-30
 
 First major release. Timer and alarm app for ZeppOS, substantially expanded from the original timer concept by [albertincx/zeppos-my-timers](https://github.com/albertincx/zeppos-my-timers).

@@ -129,6 +129,9 @@ Page({
             }
         }
 
+        // Store for use in snooze
+        this.originalAlarmName = alarmName;
+
         // Background
         hmUI.createWidget(hmUI.widget.FILL_RECT, {
             x: 0,
@@ -286,7 +289,7 @@ Page({
             url: 'app-service/index',
             time: snoozeTime,
             repeat_type: alarmMgr.REPEAT_ONCE,
-            param: `c_${snoozeTime}_00:${totalMinutes < 10 ? '0' : ''}${totalMinutes}:00|Snooze||${settingsStr}`,
+            param: `c_${snoozeTime}_00:${totalMinutes < 10 ? '0' : ''}${totalMinutes}:00|${this.originalAlarmName}||${settingsStr}`,
         };
 
         alarmMgr.set(option);
