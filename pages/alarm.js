@@ -1,8 +1,10 @@
 import hmUI, { event } from "@zos/ui";
-import {replace} from "@zos/router";
+import {replace, back} from "@zos/router";
 import * as alarmMgr from "@zos/alarm";
 import {setScrollLock} from '@zos/page'
+import { showToast } from "@zos/interaction";
 
+import {getDeviceInfo} from "@zos/device";
 import * as Styles from "zosLoader:./style.[pf].layout.js";
 import {putLiveTime, putStaticAlarm} from "../components/time";
 import {
@@ -24,17 +26,290 @@ import {setupAlarm} from "../components/time/selectTime";
 import {ALARM_KEY, HOME_TARGET} from "../config/constants";
 
 const {DEVICE_WIDTH, BUTTON_Y, TIMER_BTN} = Styles;
+const {height: DEVICE_HEIGHT} = getDeviceInfo();
 
 const globalData = getApp()._options.globalData;
+
+function showDeleteConfirmation(onConfirm) {
+    const dialog = hmUI.createWidget(hmUI.widget.VIEW_CONTAINER, {
+        x: 0,
+        y: 0,
+        w: DEVICE_WIDTH,
+        h: DEVICE_HEIGHT,
+        scroll_enable: false,
+        z_index: 100,
+    });
+
+    // Dim background
+    dialog.createWidget(hmUI.widget.FILL_RECT, {
+        x: 0,
+        y: 0,
+        w: DEVICE_WIDTH,
+        h: DEVICE_HEIGHT,
+        color: 0x000000,
+        alpha: 180,
+    });
+
+    // Dialog box
+    const boxW = 280;
+    const boxH = 180;
+    const boxX = (DEVICE_WIDTH - boxW) / 2;
+    const boxY = (DEVICE_HEIGHT - boxH) / 2;
+
+    dialog.createWidget(hmUI.widget.FILL_RECT, {
+        x: boxX,
+        y: boxY,
+        w: boxW,
+        h: boxH,
+        radius: 16,
+        color: 0x222222,
+    });
+
+    // Title
+    dialog.createWidget(hmUI.widget.TEXT, {
+        x: boxX,
+        y: boxY + 20,
+        w: boxW,
+        h: 40,
+        text: 'Delete?',
+        text_size: 28,
+        align_h: hmUI.align.CENTER_H,
+        color: 0xffffff,
+    });
+
+    // Cancel button
+    const btnW = 110;
+    const btnH = 60;
+    const btnY = boxY + boxH - btnH - 20;
+    const gap = 20;
+
+    dialog.createWidget(hmUI.widget.BUTTON, {
+        x: boxX + (boxW / 2 - btnW - gap / 2),
+        y: btnY,
+        w: btnW,
+        h: btnH,
+        radius: 12,
+        text: 'Cancel',
+        text_size: 22,
+        normal_color: 0xA1A2A6,
+        press_color: 0x888888,
+        click_func: () => {
+            hmUI.deleteWidget(dialog);
+        },
+    });
+
+    // Delete button
+    dialog.createWidget(hmUI.widget.BUTTON, {
+        x: boxX + (boxW / 2 + gap / 2),
+        y: btnY,
+        w: btnW,
+        h: btnH,
+        radius: 12,
+        text: 'Delete',
+        text_size: 22,
+        normal_color: 0x8C1B2F,
+        press_color: 0x590414,
+        click_func: () => {
+            hmUI.deleteWidget(dialog);
+            onConfirm();
+        },
+    });
+}
 
 Page({
     state: {
         activeIds: [],
+        orchestratorCommand: null,
     },
     onInit(param) {
-        if (param === 'skip') setScrollLock({lock: false});
+        if (param === 'skip') {
+            setScrollLock({lock: false});
+            return;
+        }
+
+        // Parse AIO orchestrator command
+        if (param) {
+            try {
+                const parsed = JSON.parse(param);
+                if (parsed.command) {
+                    this.state.orchestratorCommand = parsed.command;
+                }
+            } catch (e) {
+                // Not JSON, ignore
+            }
+        }
     },
     build() {
+        // Handle AIO orchestrator commands
+        if (this.state.orchestratorCommand) {
+            this.handleOrchestratorCommand(this.state.orchestratorCommand);
+            return;
+        }
+
+        this.buildNormalUI();
+    },
+
+    handleOrchestratorCommand(command) {
+        const { action, params } = command;
+
+        switch (action) {
+            case "createTimer":
+                this.createTimerFromOrchestrator(params);
+                break;
+            case "createAlarm":
+                this.createAlarmFromOrchestrator(params);
+                break;
+            case "startTimer":
+                this.startTimerFromOrchestrator(params);
+                break;
+            default:
+                showToast({ content: "Unknown command" });
+                back();
+        }
+    },
+
+    createTimerFromOrchestrator(params) {
+        const { duration, name } = params;
+
+        if (!duration || duration <= 0) {
+            showToast({ content: "Invalid duration" });
+            back();
+            return;
+        }
+
+        // Convert seconds to Date object for timer
+        const hours = Math.floor(duration / 3600);
+        const minutes = Math.floor((duration % 3600) / 60);
+        const seconds = duration % 60;
+
+        const timerDate = new Date();
+        timerDate.setHours(hours, minutes, seconds, 0);
+
+        // Default wizard config for timer
+        const wizardConfig = {
+            vibration: true,
+            continuous: true,
+            sound: true,
+            enabled: true
+        };
+
+        setupAlarm(timerDate, 'timer', name || null, false, false, wizardConfig);
+
+        const displayDuration = this.formatDuration(duration);
+        const msg = name ? `Timer "${name}" set: ${displayDuration}` : `Timer set: ${displayDuration}`;
+        showToast({ content: msg });
+    },
+
+    createAlarmFromOrchestrator(params) {
+        const { time, name, repeat } = params;
+
+        if (!time) {
+            showToast({ content: "Invalid time" });
+            back();
+            return;
+        }
+
+        // Parse time string (HH:MM format)
+        const [hours, minutes] = time.split(':').map(Number);
+
+        if (isNaN(hours) || isNaN(minutes)) {
+            showToast({ content: "Invalid time format" });
+            back();
+            return;
+        }
+
+        // Create Date object for alarm time
+        const alarmDate = new Date();
+        alarmDate.setHours(hours, minutes, 0, 0);
+
+        // If time is in the past, set for tomorrow
+        if (alarmDate.getTime() <= Date.now()) {
+            alarmDate.setDate(alarmDate.getDate() + 1);
+        }
+
+        // Default wizard config for alarm
+        const wizardConfig = {
+            vibration: true,
+            continuous: true,
+            sound: true,
+            enabled: true
+        };
+
+        setupAlarm(alarmDate, 'alarm', name || null, false, repeat === true, wizardConfig);
+
+        const displayTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        const repeatStr = repeat ? " (daily)" : "";
+        const msg = name ? `Alarm "${name}" set: ${displayTime}${repeatStr}` : `Alarm set: ${displayTime}${repeatStr}`;
+        showToast({ content: msg });
+    },
+
+    startTimerFromOrchestrator(params) {
+        const { name } = params;
+
+        if (!name) {
+            showToast({ content: "Timer name required" });
+            back();
+            return;
+        }
+
+        // Find timer by name (case-insensitive)
+        const store = globalData.localStorage.store;
+        let foundKey = null;
+
+        for (const key of Object.keys(store)) {
+            if (key.startsWith(ALARM_KEY)) {
+                const value = store[key];
+                // Timer values start with 't_' and contain custom name after first |
+                if (value && value.startsWith('t_')) {
+                    const parts = value.split('|');
+                    if (parts.length > 1 && parts[1]) {
+                        const timerName = parts[1].toLowerCase();
+                        if (timerName === name.toLowerCase()) {
+                            foundKey = key;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!foundKey) {
+            showToast({ content: `Timer "${name}" not found` });
+            back();
+            return;
+        }
+
+        // Get timer duration from storage value
+        const value = store[foundKey];
+        const timeStr = value.split('_')[2].split('|')[0]; // Extract duration string
+        const timerDate = getTimeFromStr(timeStr);
+
+        if (!timerDate) {
+            showToast({ content: "Invalid timer data" });
+            back();
+            return;
+        }
+
+        // Start the timer using storage key as mode
+        setupAlarm(timerDate, foundKey, null, false, false, null);
+        showToast({ content: `Started: ${name}` });
+    },
+
+    formatDuration(seconds) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+
+        if (h > 0) {
+            return `${h}h ${m}m`;
+        } else if (m > 0) {
+            return s > 0 ? `${m}m ${s}s` : `${m}m`;
+        } else {
+            return `${s}s`;
+        }
+    },
+
+    buildNormalUI() {
         putLiveTime();
         const that = this;
         const activeAlarms = alarmMgr.getAllAlarms();
@@ -270,12 +545,14 @@ Page({
                                 hmUI,
                                 BUTTON_Y + Styles.BUTTON_LIST * ii,
                                 () => {
-                                    // Delete alarm
-                                    globalData.localStorage.removeItem(alarmNumOrKey);
-                                    alarmMgr.cancel(activeId);
-                                    replace({
-                                        url: HOME_TARGET,
-                                        params: 'skip',
+                                    showDeleteConfirmation(() => {
+                                        // Delete alarm
+                                        globalData.localStorage.removeItem(alarmNumOrKey);
+                                        alarmMgr.cancel(activeId);
+                                        replace({
+                                            url: HOME_TARGET,
+                                            params: 'skip',
+                                        });
                                     });
                                 },
                                 () => {
@@ -412,14 +689,16 @@ Page({
                             y: BUTTON_Y + Styles.BUTTON_LIST * ii + 5,
                             w: TIMER_BTN.w / 5,
                             click_func: () => {
-                                let deleteAlarm = activeId || alarmNumOrKey;
-                                globalData.localStorage.removeItem(alarmNumOrKey);
+                                showDeleteConfirmation(() => {
+                                    let deleteAlarm = activeId || alarmNumOrKey;
+                                    globalData.localStorage.removeItem(alarmNumOrKey);
 
-                                if (deleteAlarm) alarmMgr.cancel(deleteAlarm)
+                                    if (deleteAlarm) alarmMgr.cancel(deleteAlarm)
 
-                                replace({
-                                    url: HOME_TARGET,
-                                    params: 'skip',
+                                    replace({
+                                        url: HOME_TARGET,
+                                        params: 'skip',
+                                    });
                                 });
                             },
                         });
